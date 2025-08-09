@@ -1,0 +1,29 @@
+# docker-compose.yml
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:13
+    restart: always
+    environment:
+
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: students
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - student-net
+
+  web:
+    build: ./app
+    ports:
+      - "8080:5000"
+    depends_on:
+      - db
+    networks:
+      - student-net
+
+networks:
+  student-net:
