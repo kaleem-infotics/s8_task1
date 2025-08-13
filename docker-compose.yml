@@ -1,49 +1,29 @@
 # docker-compose.yml
 
-#!/bin/bash
-set -e
+version: '3.8'
 
-# Clean up any existing containers
-docker-compose down --remove-orphans
+services:
+  db:
+    image: postgres:13
+    restart: always
+    environment:
 
-# Start the services with a timeout
-echo "Starting services..."
-timeout 300 docker-compose up -d || {
-    echo "❌ Services failed to start within 5 minutes"
-    echo "=== Database Logs ==="
-    docker-compose logs db
-    echo "=== Web Logs ==="
-    docker-compose logs web
-    exit 1
-}
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: students
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - student-net
 
-# Wait a bit more and verify services are running
-sleep 10
+  web:
+    build: ./app
+    ports:
+      - "8080:5000"
+    depends_on:
+      - db
+    networks:
+      - student-net
 
-# Check if containers are healthy
-if docker-compose ps | grep -q "unhealthy\|Exit"; then
-    echo "❌ Some services are not healthy"
-    docker-compose ps
-    docker-compose logs
-    exit 1
-fi
-
-echo "✅ Services started successfully!"
-
-# Optional: Test the application
-if command -v curl &> /dev/null; then
-    echo "Testing application..."
-    for i in {1..30}; do
-        if curl -f http://localhost:8082/ > /dev/null 2>&1; then
-            echo "✅ Application is responding!"
-            break
-        fi
-        echo "⏳ Waiting for application to respond... (attempt $i/30)"
-        sleep 2
-        if [ $i -eq 30 ]; then
-            echo "❌ Application failed to respond after 60 seconds"
-            docker-compose logs web
-            exit 1
-        fi
-    done
-fi
+networks:
+  student-net:
