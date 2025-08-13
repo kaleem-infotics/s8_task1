@@ -19,7 +19,7 @@ services:
   web:
     build: ./app
     ports:
-      - "8080:5000"
+      - "8082:5000"
     depends_on:
       - db
     networks:
